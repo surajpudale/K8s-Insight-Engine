@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suraj's K8s Insight Engine</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .container {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      height: 90%;
+      width: 90%;
+      max-width: 1200px;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 70%;
+      height: 100%;
+    }
+    .sidebar {
+      width: 25%;
+      height: 100%;
+      margin-left: 20px;
+      padding: 20px;
+      border-radius: 10px;
+      background: #f9f9f9;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .title {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .title img {
+      width: 40px;
+      height: 40px;
+      margin-right: 10px;
+    }
+    h1 {
+      color: #0078d4;
+      margin: 0;
+    }
+    .chat-window {
+      flex-grow: 1;
+      overflow-y: auto;
+      margin-bottom: 20px;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      background: #f9f9f9;
+    }
+    .message {
+      margin: 10px 0;
+      position: relative;
+      padding: 10px;
+      border-radius: 10px;
+    }
+    .message.user {
+      text-align: right;
+      background-color: #e1f5fe;
+      color: #0078d4;
+    }
+    .message.bot {
+      text-align: left;
+      background-color: #e8e8e8;
+      color: #333;
+    }
+    .message .result, .message .error {
+      background: #fff;
+      padding: 10px;
+      border-radius: 10px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .copy-icon {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      cursor: pointer;
+      color: #0078d4;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+    }
+    input[type="text"] {
+      padding: 15px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 16px;
+    }
+    button {
+      padding: 15px;
+      background-color: #0078d4;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .examples {
+      margin-top: 20px;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      background: #f9f9f9;
+    }
+    .examples h2 {
+      margin-top: 0;
+      color: #0078d4;
+    }
+    .examples ul {
+      padding-left: 20px;
+    }
+    .examples li {
+      margin-bottom: 10px;
+    }
+    .new-chat-button {
+      margin-top: 10px;
+      padding: 15px;
+      background-color: #0078d4;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .new-chat-button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="main-content">
+      <div class="title">
+        <img src="public/icon.png" alt="Icon">
+        <h1>Suraj's K8s Insight Engine</h1>
+      </div>
+      <div class="chat-window" id="chatWindow"></div>
+      <form id="commandForm">
+        <label for="command">Ask me anything...:</label>
+        <input type="text" id="command" name="command" required>
+        <button type="submit">Run</button>
+      </form>
+      <button class="new-chat-button" id="newChatButton">New Chat</button>
+    </div>
+    <div class="sidebar">
+      <div class="examples">
+        <h2>Asks Sample :</h2>
+        <ul>
+          <li>list of pods in the namespace __NameSpaceName__</li>
+          <li>logs of pod __PODName__ in the __NameSpaceName__ namespace</li>
+          <li>list of namespace</li>
+          <li>analyze namespace __NameSpaceName__</li>
+          <li>analyze cluster</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.getElementById('commandForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const command = document.getElementById('command').value;
+      const chatWindow = document.getElementById('chatWindow');
+
+      // Append user message to chat window
+      const userMessage = document.createElement('div');
+      userMessage.className = 'message user';
+      userMessage.textContent = command;
+      chatWindow.appendChild(userMessage);
+
+      // Scroll to the bottom of the chat window
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+
+      // Command to endpoint mapping
+      const commandToEndpoint = {
+        'list of pods': '/api/pods',
+        'logs of pod': '/api/logs',
+        'list of namespaces': '/api/namespaces',
+        'list of namespace': '/api/namespaces',
+        'give me list of namespaces': '/api/namespaces',
+        'give me list of namespace': '/api/namespaces',
+        'analyze namespace': '/api/analyze',
+        'analyze cluster': '/api/analyze'
+      };
+
+      // Determine the endpoint based on the command
+      let endpoint = '';
+      for (const [key, value] of Object.entries(commandToEndpoint)) {
+        if (command.includes(key)) {
+          endpoint = value;
+          break;
+        }
+      }
+
+      // Send command to server
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ command }),
+      });
+      const result = await response.text();
+
+      // Append bot response to chat window
+      const botMessage = document.createElement('div');
+      botMessage.className = 'message bot';
+      botMessage.innerHTML = result;
+
+      // Add copy icon
+      const copyIcon = document.createElement('span');
+      copyIcon.className = 'copy-icon';
+      copyIcon.innerHTML = '&#x2398;'; // Clipboard icon
+      copyIcon.title = 'Copy to clipboard';
+      copyIcon.addEventListener('click', () => {
+        navigator.clipboard.writeText(result).then(() => {
+          alert('Copied to clipboard');
+        });
+      });
+      botMessage.appendChild(copyIcon);
+
+      chatWindow.appendChild(botMessage);
+
+      // Scroll to the bottom of the chat window
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+
+      // Clear the input field
+      document.getElementById('command').value = '';
+    });
+
+    document.getElementById('newChatButton').addEventListener('click', function() {
+      const chatWindow = document.getElementById('chatWindow');
+      chatWindow.innerHTML = ''; // Clear the chat window
+    });
+  </script>
+</body>
+</html>
